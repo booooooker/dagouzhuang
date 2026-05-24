@@ -59,6 +59,12 @@
             <span class="pause-icon">⏸️</span>
             <span class="pause-text">交易暂停</span>
           </div>
+          <div v-if="!gameRunning" class="start-overlay">
+            <button @click="startGame" class="btn-start-game">
+              <span class="start-icon">{{ gameOver ? '🔄' : '🚀' }}</span>
+              <span class="start-text">{{ gameOver ? '重新建仓' : '开始交易' }}</span>
+            </button>
+          </div>
         </div>
 
         <div class="mobile-controls" v-if="isMobile">
@@ -383,7 +389,7 @@ function startGame() {
   isWin.value = false
   currentGameScore.value = 0
 
-  gameLoop = setInterval(update, isMobile.value ? 120 : 100)
+  gameLoop = setInterval(update, isMobile.value ? 180 : 150)
   timeTimer = setInterval(() => {
     if (gameRunning.value && !paused.value) {
       gameTime.value++
@@ -926,6 +932,64 @@ canvas {
   color: #ffd700;
   font-weight: bold;
   font-size: 1.2em;
+}
+
+.start-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 12px;
+  backdrop-filter: blur(5px);
+}
+
+.btn-start-game {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 25px 45px;
+  background: linear-gradient(135deg, #ffd700, #ff6b6b);
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  box-shadow: 0 10px 40px rgba(255, 215, 0, 0.4);
+  animation: pulse 2s infinite;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-start-game:hover {
+  transform: scale(1.05);
+  box-shadow: 0 15px 50px rgba(255, 215, 0, 0.6);
+}
+
+.btn-start-game:active {
+  transform: scale(0.98);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 10px 40px rgba(255, 215, 0, 0.4);
+  }
+  50% {
+    box-shadow: 0 15px 50px rgba(255, 215, 0, 0.6);
+  }
+}
+
+.start-icon {
+  font-size: 3.5em;
+}
+
+.start-text {
+  font-size: 1.4em;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .mobile-controls {
