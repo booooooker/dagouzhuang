@@ -2,7 +2,8 @@
 FROM node:20-alpine AS frontend-build
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
-RUN npm ci --only=production
+# 安装所有依赖（包括开发依赖），因为 vite 是开发依赖
+RUN npm ci
 COPY frontend/ .
 RUN npm run build
 
@@ -20,7 +21,7 @@ WORKDIR /app
 # 安装 curl 用于健康检查
 RUN apk add --no-cache curl
 
-# 复制前端静态文件到后端资源目录
+# 复制前端静态文件
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
 # 复制后端 JAR 文件
