@@ -1,151 +1,67 @@
-# 吃狗庄 - 股票贪吃蛇游戏
+手把手教你开发一个可公网访问的网站
+（所有用到的工具和域名和服务器成本为0）
+布哥说明：本文专为行外人、零基础新手打造，全程使用免费工具，不需要懂高深技术，手把手教你把本地项目部署成全球可访问的网站，告别 localhost。整套方案布哥从零到上线花了两个小时，你顺利的话应该一两个小时就可以完成，过程中如果遇到任何问题可问 AI 解决。
+首先给大家看看终点：
+✅ 成品演示地址：https://dagouzhuang.onrender.com/
 
-一个融合股票交易术语的贪吃蛇游戏，支持积分系统和排行榜。
+一、注册 GitHub，创建代码仓库
+1. 打开 GitHub 官网注册账号：https://github.com/
+2. 新建公开仓库，用来存放你的项目所有代码。
+（仓库创建页面配置：公开仓库、无需勾选 README、无需 gitignore、无需证书）
 
-## 项目结构
+二、安装 TortoiseGit，拉取代码到本地
+1. 电脑安装 TortoiseGit 工具。
+2. 在电脑空白文件夹右键，将 GitHub 远程仓库克隆到本地，得到本地代码文件夹。
 
-```
-dagouzhuang/
-├── backend/                 # Spring Boot 后端
-│   ├── pom.xml
-│   └── src/
-│       └── main/
-│           ├── java/com/snakegame/
-│           │   ├── SnakeGameApplication.java
-│           │   ├── WebMvcConfig.java
-│           │   ├── controller/
-│           │   │   └── GameController.java
-│           │   ├── entity/
-│           │   │   └── User.java
-│           │   ├── repository/
-│           │   │   └── UserRepository.java
-│           │   └── service/
-│           │       └── UserService.java
-│           └── resources/
-│               └── application.yml
-├── frontend/                # Vue 3 前端
-│   ├── package.json
-│   ├── vite.config.js
-│   ├── index.html
-│   ├── admin.html
-│   └── src/
-│       ├── main.js
-│       ├── api.js
-│       ├── App.vue
-│       └── Admin.vue
-├── data/                    # 数据库文件目录
-├── Dockerfile
-├── docker-compose.yml
-└── README.md
-```
-
-## 技术栈
-
-- **后端**: Spring Boot 3.2 + JPA + H2数据库
-- **前端**: Vue 3 + Vite + Axios
-- **数据库**: H2 (文件模式，数据持久化)
-- **容器**: Docker + Docker Compose
-
-## 运行项目
-
-### 方式一：使用 Docker Compose（推荐）
-
-```bash
-# 构建并启动容器
-docker-compose up -d
-
-# 查看日志
-docker-compose logs -f
-
-# 停止服务
-docker-compose down
-```
-
-服务启动后访问:
-- 游戏首页: http://localhost:8080
-- 管理后台: http://localhost:8080/admin.html
-
-### 方式二：本地开发运行
-
-#### 1. 启动后端
-
-```bash
+三、安装免费 AI 编程工具 TRAE
+打开官网安装 TRAE AI 编程工具，全程免费、零基础可用：https://www.trae.cn/
+唯一真正免费、全自动开发、自动写代码、自动生成部署文件的 AI 工具。
+四、AI 全自动开发前后端项目
+1. 用 TRAE 打开你刚刚拉取的本地代码文件夹。
+2. 直接输入需求（复制即可）：
+帮我开发一个吃狗庄的贪吃蛇游戏，功能可以根据股票交易术语设计，前后端在一个工程，前端VUE，后端springboot，用户访问时根据IP自动创建用户信息，有积分，和排行榜
+3.等待 AI 自动开发，自动生成完整前后端代码。
+4.
+五、本地启动测试（确认项目能跑）
+1. 启动后端（终端执行）
+Plain Text
 cd backend
 mvn spring-boot:run
-```
-
-后端会在 http://localhost:8080 启动
-
-#### 2. 启动前端
-
-```bash
+2. 启动前端（新开终端执行）
+Plain Text
 cd frontend
 npm install
 npm run dev
-```
+3. 浏览器访问：http://localhost:3000，即可正常游玩项目，可以看到程序已经启动起来了，不过此时你本地通过localhost可以访问，但互联网访问不了，要实现给互联网访问也很简单，后面布哥会告诉你如何部署到远程服务器，告别他人无情的嘲讽XD
+六、让 AI 自动生成 Docker 部署文件
+在 TRAE 输入指令：我用docker部署，给我创建好相关文件
+AI 会自动一次性生成全部部署文件：
+•Dockerfile 多阶段构建文件
+•docker-compose.yml 配置文件
+•跨域、静态资源配置类
+•适配云端部署的 yml 配置
+七、提交全部代码到 GitHub
+将项目代码 + AI 生成的全部部署文件，统一提交并推送至 GitHub 远程仓库，保证代码完整。
 
-前端会在 http://localhost:3000 启动
+八、Render 免费云服务器部署上线
+1. 打开 Render 官网，GitHub 账号直接登录：https://render.com/
 
-## 游戏规则
+2.新建 Web Service（免费版足够个人使用）
 
-- 🐕 **吃狗** = 建仓（+10分）
-- 🐕 **吃狗庄** = 平仓（+50分）
-- 💣 **撞炸弹** = 爆仓（游戏结束）
-- ⚠️ **撞障碍物** = 爆仓（游戏结束）
-- 📉 **撞墙** = 割肉（游戏结束）
-- 📈 **撞自己** = 止损（游戏结束）
+3. 绑定你的 GitHub 项目仓库
+4. docker配置：
 
-## 功能特性
+•Root Directory：留空
+•Dockerfile Path：./Dockerfile
+•Build Context：.
+5.点击 Deploy Web Service，开始自动云端构建部署。
 
-1. **自动用户创建**: 根据访问IP自动创建用户
-2. **积分系统**: 累计积分，以美元显示
-3. **排行榜**: 支持按总积分和最高分排序
-4. **股票术语**: 游戏元素融合了牛市/熊市、建仓、平仓等概念
-5. **双模式切换**: 游戏中会自动切换牛市(蓝绿色调)和熊市(红黄色调)
-6. **障碍物系统**: 游戏中有炸弹和障碍物增加难度
-7. **管理后台**: 管理员可查看所有用户数据
+6.等待 3–5 分钟，部署报错基本都是 Docker 配置问题，把报错发给 TRAE 自动修复即可。
 
-## 管理后台
+九、成功公网访问
+部署完成后，Render 自动生成免费公网域名，全世界均可直接访问。
 
-访问地址: `/admin.html`
+✅ 成品演示地址：https://dagouzhuang.onrender.com/ 
+注：render免费版的网站如果长期无人访问会跳转到官网，需要等15秒后再次访问
 
-登录密码: `buge2026`
-
-功能:
-- 查看所有用户列表
-- 用户搜索（昵称/IP）
-- 用户删除
-- 统计数据展示
-
-## API接口
-
-### 用户接口
-- `GET /api/user` - 获取当前用户
-- `PUT /api/user/nickname?userId=&nickname=` - 修改昵称
-
-### 游戏接口
-- `POST /api/game/end?userId=&score=&isWin=` - 提交游戏结果
-
-### 排行榜接口
-- `GET /api/leaderboard/score` - 总积分榜
-- `GET /api/leaderboard/maxscore` - 最高分榜
-
-### 管理员接口
-- `POST /api/admin/login?password=` - 管理员登录
-- `GET /api/admin/users` - 获取所有用户
-- `DELETE /api/admin/user/{userId}` - 删除用户
-
-## Docker 环境变量
-
-| 变量名 | 默认值 | 说明 |
-|--------|--------|------|
-| `SPRING_PROFILES_ACTIVE` | docker | Spring 配置文件 |
-| `DB_PATH` | /app/data/snakegame | 数据库文件路径 |
-
-## 数据持久化
-
-使用 Docker Compose 运行时，数据会自动持久化到 `./data` 目录。
-
-## License
-
-MIT
+随便做的游戏，只是演示用，很多BUG，不用在意，过程中如果有问题可以关注微博：顺势独行的布哥 https://weibo.com/u/6242589419
