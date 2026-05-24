@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "npx vite",
-    "build": "npx vite build",
+    "dev": "node -e \"require('vite').createServer().then(s => s.listen())\"",
+    "build": "node -e \"require('vite').build().catch(e => { console.error(e); process.exit(1); })\"",
     "preview": "npx vite preview"
   },
   "dependencies": {
