@@ -53,29 +53,50 @@
           </div>
         </div>
 
-        <div class="canvas-wrapper">
+        <div class="canvas-wrapper" @click="handleMouseClick">
           <canvas ref="gameCanvas" :width="canvasSize" :height="canvasSize"></canvas>
           <div v-if="paused" class="pause-overlay">
             <span class="pause-icon">⏸️</span>
             <span class="pause-text">交易暂停</span>
           </div>
-          <div v-if="!gameRunning" class="start-overlay">
-            <button @click="startGame" class="btn-start-game">
+          <div v-if="!gameRunning && !showDifficultySelect" class="start-overlay">
+            <button @click.stop="showDifficultySelect = true" class="btn-start-game">
               <span class="start-icon">{{ gameOver ? '🔄' : '🚀' }}</span>
-              <span class="start-text">{{ gameOver ? '重新建仓' : '开始交易' }}</span>
+              <span class="start-text">{{ gameOver ? '重新建仓' : '开始吃狗庄' }}</span>
             </button>
+          </div>
+          
+          <div v-if="showDifficultySelect" class="difficulty-overlay">
+            <div class="difficulty-modal">
+              <span class="difficulty-icon">⚡</span>
+              <h3 class="difficulty-title">选择交易难度</h3>
+              <div class="difficulty-options">
+                <button @click.stop="selectDifficulty('bear')" class="difficulty-btn bear">
+                  <span class="diff-icon">🐻</span>
+                  <span class="diff-name">熊市</span>
+                  <span class="diff-desc">速度最慢</span>
+                </button>
+                <button @click.stop="selectDifficulty('shock')" class="difficulty-btn shock">
+                  <span class="diff-icon">📊</span>
+                  <span class="diff-name">震荡</span>
+                  <span class="diff-desc">速度中等</span>
+                </button>
+                <button @click.stop="selectDifficulty('bull')" class="difficulty-btn bull">
+                  <span class="diff-icon">🐂</span>
+                  <span class="diff-name">牛市</span>
+                  <span class="diff-desc">速度最快</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="swipe-area" v-if="isMobile" @touchstart="handleTouchStart" @touchmove="handleTouchMove" @touchend="handleTouchEnd">
+        <div class="swipe-area" v-if="isMobile && gameRunning" @touchstart="handleTouchStart" @touchmove="handleTouchMove" @touchend="handleTouchEnd">
           <div class="swipe-hint">👆 滑动控制方向</div>
         </div>
 
         <div class="action-buttons">
-          <button v-if="!gameRunning" @click="startGame" class="btn-primary">
-            {{ gameOver ? '🔄 重新建仓' : '🚀 开始交易' }}
-          </button>
-          <button v-else @click="pauseGame" class="btn-secondary">
+          <button v-if="gameRunning" @click="pauseGame" class="btn-secondary">
             {{ paused ? '▶️ 继续交易' : '⏸️ 暂停' }}
           </button>
           <button v-if="gameRunning" @click="endGameEarly" class="btn-danger">
@@ -143,8 +164,7 @@
           <span class="total-value">$ {{ currentUser?.score || 0 }}</span>
         </div>
         <div class="modal-buttons">
-          <button @click="closeGameOver" class="btn-primary">继续交易</button>
-          <button @click="startGame" class="btn-secondary">再来一局</button>
+          <button @click="startGame" class="btn-primary">再来一局</button>
         </div>
       </div>
     </div>
@@ -170,6 +190,8 @@ const gameOver = ref(false)
 const showGameOver = ref(false)
 const isWin = ref(false)
 const gameScore = ref(0)
+const showDifficultySelect = ref(false)
+const gameSpeed = ref('shock')
 const currentGameScore = ref(0)
 const isBullMarket = ref(true)
 const gameCanvas = ref(null)
@@ -185,6 +207,7 @@ let obstacles = []
 let direction = { x: 1, y: 0 }
 let nextDirection = { x: 1, y: 0 }
 let gameLoop = null
+let mouthOpen = false
 let foodTimer = null
 let marketTimer = null
 let timeTimer = null
@@ -361,7 +384,15 @@ function addObstacle() {
   }
 }
 
+function selectDifficulty(difficulty) {
+  gameSpeed.value = difficulty
+  showDifficultySelect.value = false
+  startGame()
+}
+
 function startGame() {
+  showDifficultySelect.value = false
+  showGameOver.value = false
   initGame()
   gameRunning.value = true
   paused.value = false
@@ -369,7 +400,13 @@ function startGame() {
   isWin.value = false
   currentGameScore.value = 0
 
-  gameLoop = setInterval(update, isMobile.value ? 180 : 150)
+  const speeds = {
+    bear: isMobile.value ? 250 : 220,
+    shock: isMobile.value ? 180 : 150,
+    bull: isMobile.value ? 120 : 100
+  }
+  
+  gameLoop = setInterval(update, speeds[gameSpeed.value])
   timeTimer = setInterval(() => {
     if (gameRunning.value && !paused.value) {
       gameTime.value++
@@ -416,12 +453,16 @@ function update() {
   snake.unshift(head)
 
   if (head.x === food.x && head.y === food.y) {
+    mouthOpen = true
+    setTimeout(() => { mouthOpen = false }, 150)
     currentGameScore.value += 10
     if (snake.length > maxSnakeLength.value) {
       maxSnakeLength.value = snake.length
     }
     spawnFood()
   } else if (doge.active && head.x === doge.x && head.y === doge.y) {
+    mouthOpen = true
+    setTimeout(() => { mouthOpen = false }, 150)
     currentGameScore.value += 50
     doge.active = false
     spawnDoge()
@@ -529,18 +570,45 @@ function draw() {
       ctx.fillStyle = snakeGradient
       ctx.shadowBlur = 20
       ctx.shadowColor = isBullMarket.value ? '#00ffff' : '#ffaa00'
+      
+      const headSize = gridSize - 4
+      const headX = segment.x * gridSize + 2
+      const headY = segment.y * gridSize + 2
+      
       ctx.beginPath()
-      ctx.roundRect(segment.x * gridSize + 2, segment.y * gridSize + 2, gridSize - 4, gridSize - 4, 4)
+      ctx.roundRect(headX, headY, headSize, headSize, 4)
       ctx.fill()
       
       ctx.fillStyle = '#fff'
       ctx.shadowBlur = 0
       ctx.beginPath()
-      ctx.arc(segment.x * gridSize + 6, segment.y * gridSize + 6, 3, 0, Math.PI * 2)
+      ctx.arc(headX + 4, headY + 4, 3, 0, Math.PI * 2)
       ctx.fill()
       ctx.beginPath()
-      ctx.arc(segment.x * gridSize + gridSize - 6, segment.y * gridSize + 6, 3, 0, Math.PI * 2)
+      ctx.arc(headX + headSize - 4, headY + 4, 3, 0, Math.PI * 2)
       ctx.fill()
+      
+      ctx.fillStyle = '#ff6b6b'
+      const mouthSize = mouthOpen ? 8 : 4
+      const mouthOffset = mouthOpen ? 2 : 0
+      
+      if (direction.x === 1) {
+        ctx.beginPath()
+        ctx.ellipse(headX + headSize - 2 + mouthOffset, headY + headSize / 2, mouthSize / 2, 3, 0, 0, Math.PI * 2)
+        ctx.fill()
+      } else if (direction.x === -1) {
+        ctx.beginPath()
+        ctx.ellipse(headX + 2 - mouthOffset, headY + headSize / 2, mouthSize / 2, 3, 0, 0, Math.PI * 2)
+        ctx.fill()
+      } else if (direction.y === 1) {
+        ctx.beginPath()
+        ctx.ellipse(headX + headSize / 2, headY + headSize - 2 + mouthOffset, 3, mouthSize / 2, 0, 0, Math.PI * 2)
+        ctx.fill()
+      } else {
+        ctx.beginPath()
+        ctx.ellipse(headX + headSize / 2, headY + 2 - mouthOffset, 3, mouthSize / 2, 0, 0, Math.PI * 2)
+        ctx.fill()
+      }
     } else {
       ctx.fillStyle = isBullMarket.value ? 'rgba(0, 170, 255, 0.7)' : 'rgba(255, 149, 0, 0.7)'
       ctx.shadowBlur = 5
@@ -674,6 +742,35 @@ function handleTouchMove(e) {
 
 function handleTouchEnd() {
   // 滑动结束，重置起点
+}
+
+function handleMouseClick(e) {
+  if (!gameRunning.value || paused.value) return
+  
+  const canvas = gameCanvas.value
+  const rect = canvas.getBoundingClientRect()
+  const x = e.clientX - rect.left
+  const y = e.clientY - rect.top
+  
+  const centerX = canvas.width / 2
+  const centerY = canvas.height / 2
+  
+  const diffX = x - centerX
+  const diffY = y - centerY
+  
+  if (Math.abs(diffX) > Math.abs(diffY)) {
+    if (diffX > 0 && direction.x !== -1) {
+      nextDirection = { x: 1, y: 0 }
+    } else if (diffX < 0 && direction.x !== 1) {
+      nextDirection = { x: -1, y: 0 }
+    }
+  } else {
+    if (diffY > 0 && direction.y !== -1) {
+      nextDirection = { x: 0, y: 1 }
+    } else if (diffY < 0 && direction.y !== 1) {
+      nextDirection = { x: 0, y: -1 }
+    }
+  }
 }
 
 onUnmounted(() => {
@@ -949,6 +1046,108 @@ canvas {
   color: #ffd700;
   font-weight: bold;
   font-size: 1.2em;
+}
+
+.difficulty-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(5px);
+  z-index: 100;
+}
+
+.difficulty-modal {
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  border-radius: 20px;
+  padding: 30px;
+  text-align: center;
+  border: 2px solid rgba(255, 215, 0, 0.3);
+  box-shadow: 0 0 40px rgba(255, 215, 0, 0.15);
+  max-width: 320px;
+  width: 90%;
+}
+
+.difficulty-icon {
+  font-size: 3.5em;
+  display: block;
+  margin-bottom: 15px;
+}
+
+.difficulty-title {
+  color: #fff;
+  font-size: 1.3em;
+  margin-bottom: 25px;
+  font-weight: bold;
+}
+
+.difficulty-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.difficulty-btn {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px 20px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.difficulty-btn.bear {
+  background: linear-gradient(135deg, #4a69bd, #2c3e50);
+  border: 2px solid rgba(74, 105, 189, 0.5);
+}
+
+.difficulty-btn.bear:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 20px rgba(74, 105, 189, 0.4);
+}
+
+.difficulty-btn.shock {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  border: 2px solid rgba(243, 156, 18, 0.5);
+}
+
+.difficulty-btn.shock:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 20px rgba(243, 156, 18, 0.4);
+}
+
+.difficulty-btn.bull {
+  background: linear-gradient(135deg, #27ae60, #1e8449);
+  border: 2px solid rgba(39, 174, 96, 0.5);
+}
+
+.difficulty-btn.bull:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 20px rgba(39, 174, 96, 0.4);
+}
+
+.diff-icon {
+  font-size: 1.5em;
+}
+
+.diff-name {
+  flex: 1;
+  text-align: left;
+  color: #fff;
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+.diff-desc {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9em;
 }
 
 .start-overlay {
