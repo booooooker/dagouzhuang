@@ -1,41 +1,21 @@
-# 前端构建阶段
-FROM node:20-alpine AS frontend-build
-WORKDIR /app/frontend
-COPY frontend/package*.json ./
-# 安装所有依赖（包括开发依赖），因为 vite 是开发依赖
+FROM node:20-alpine AS frontend
+WORKDIR /fe
+COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
-COPY frontend/ .
+COPY frontend/ ./
 RUN npm run build
 
-# 后端构建阶段
-FROM maven:3.9-eclipse-temurin-17 AS backend-build
-WORKDIR /app/backend
-COPY backend/pom.xml ./
-COPY backend/src ./src
-RUN mvn clean package -DskipTests
-
-# 最终运行阶段
-FROM eclipse-temurin:17-jre-alpine
+FROM maven:3.9.9-eclipse-temurin-17 AS build
 WORKDIR /app
+COPY backend/pom.xml .
+COPY backend/src ./src
+COPY --from=frontend /fe/dist ./src/main/resources/static
+RUN mvn -B package -DskipTests
+RUN cp /app/target/snake-game-backend-*.jar /app/application.jar
 
-# 安装 curl 用于健康检查
-RUN apk add --no-cache curl
-
-# 复制前端静态文件
-COPY --from=frontend-build /app/frontend/dist ./frontend/dist
-
-# 复制后端 JAR 文件
-COPY --from=backend-build /app/backend/target/snake-game-backend-1.0.0.jar ./backend.jar
-
-# 创建数据目录
-RUN mkdir -p /app/data
-
-# 暴露端口
+FROM eclipse-temurin:17-jre-jammy
+WORKDIR /app
+COPY --from=build /app/application.jar app.jar
+ENV JAVA_TOOL_OPTIONS="-Djava.net.preferIPv4Stack=true -XX:MaxRAMPercentage=75.0"
 EXPOSE 8080
-
-# 设置环境变量
-ENV SPRING_PROFILES_ACTIVE=docker
-ENV DB_PATH=/app/data/snakegame
-
-# 启动命令
-CMD ["java", "-jar", "backend.jar"]
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
