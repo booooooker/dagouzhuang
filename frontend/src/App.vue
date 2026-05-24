@@ -67,28 +67,8 @@
           </div>
         </div>
 
-        <div class="mobile-controls" v-if="isMobile">
-          <div class="control-row">
-            <div class="control-btn" @touchstart.prevent="handleTouchMove(0, -1)">
-              <span>↑</span>
-            </div>
-          </div>
-          <div class="control-row">
-            <div class="control-btn" @touchstart.prevent="handleTouchMove(-1, 0)">
-              <span>←</span>
-            </div>
-            <div class="control-center">
-              <span class="center-icon">🎮</span>
-            </div>
-            <div class="control-btn" @touchstart.prevent="handleTouchMove(1, 0)">
-              <span>→</span>
-            </div>
-          </div>
-          <div class="control-row">
-            <div class="control-btn" @touchstart.prevent="handleTouchMove(0, 1)">
-              <span>↓</span>
-            </div>
-          </div>
+        <div class="swipe-area" v-if="isMobile" @touchstart="handleTouchStart" @touchmove="handleTouchMove" @touchend="handleTouchEnd">
+          <div class="swipe-hint">👆 滑动控制方向</div>
         </div>
 
         <div class="action-buttons">
@@ -653,10 +633,47 @@ function handleKeydown(e) {
   }
 }
 
-function handleTouchMove(dx, dy) {
+let touchStartX = 0
+let touchStartY = 0
+let touchThreshold = 30
+
+function handleTouchStart(e) {
+  const touch = e.touches[0]
+  touchStartX = touch.clientX
+  touchStartY = touch.clientY
+}
+
+function handleTouchMove(e) {
+  e.preventDefault()
   if (!gameRunning.value || paused.value) return
   
-  if (direction.x !== -dx) nextDirection = { x: dx, y: dy }
+  const touch = e.touches[0]
+  const touchEndX = touch.clientX
+  const touchEndY = touch.clientY
+  const diffX = touchEndX - touchStartX
+  const diffY = touchEndY - touchStartY
+  
+  if (Math.abs(diffX) > touchThreshold || Math.abs(diffY) > touchThreshold) {
+    if (Math.abs(diffX) > Math.abs(diffY)) {
+      if (diffX > 0 && direction.x !== -1) {
+        nextDirection = { x: 1, y: 0 }
+      } else if (diffX < 0 && direction.x !== 1) {
+        nextDirection = { x: -1, y: 0 }
+      }
+    } else {
+      if (diffY > 0 && direction.y !== -1) {
+        nextDirection = { x: 0, y: 1 }
+      } else if (diffY < 0 && direction.y !== 1) {
+        nextDirection = { x: 0, y: -1 }
+      }
+    }
+    touchStartX = touchEndX
+    touchStartY = touchEndY
+  }
+}
+
+function handleTouchEnd() {
+  // 滑动结束，重置起点
 }
 
 onUnmounted(() => {
@@ -992,37 +1009,26 @@ canvas {
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-.mobile-controls {
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  margin: 20px 0;
+.swipe-area {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  cursor: pointer;
 }
 
-@media (max-width: 600px) {
-  .mobile-controls {
-    display: flex;
-  }
-}
-
-.control-row {
-  display: flex;
-  gap: 10px;
-}
-
-.control-btn {
-  width: 60px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 15px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  color: #fff;
-  font-size: 1.5em;
-  transition: all 0.2s ease;
+.swipe-hint {
+  position: absolute;
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.85em;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 20px;
+  backdrop-filter: blur(5px);
 }
 
 .control-btn:active {
@@ -1395,5 +1401,117 @@ canvas {
   .footer {
     font-size: 0.85em;
   }
-}
-</style>
+  
+  .main-content {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 80px;
+  }
+  
+  .game-container {
+    padding: 10px;
+  }
+  
+  .game-header {
+    margin-bottom: 10px;
+  }
+  
+  .game-stats {
+    gap: 10px;
+  }
+  
+  .stat-item {
+    padding: 6px 10px;
+    min-width: 70px;
+  }
+  
+  .stat-label {
+    font-size: 0.65em;
+  }
+  
+  .stat-value {
+    font-size: 0.9em;
+  }
+  
+  .game-status {
+    padding: 6px 12px;
+    font-size: 0.8em;
+  }
+  
+  .canvas-wrapper {
+    margin-bottom: 10px;
+  }
+  
+  canvas {
+    max-width: 100%;
+    height: auto;
+  }
+  
+  .action-buttons {
+    gap: 8px;
+    margin-bottom: 15px;
+  }
+  
+  .btn-primary, .btn-secondary, .btn-danger {
+    padding: 10px 18px;
+    font-size: 0.85em;
+    border-radius: 20px;
+  }
+  
+  .leaderboard-section {
+    padding: 0 15px 15px 15px;
+  }
+  
+  .leaderboard-header {
+    margin-bottom: 12px;
+  }
+  
+  .section-title {
+    font-size: 1.1em;
+  }
+  
+  .leaderboard-item {
+    padding: 8px 12px;
+    gap: 12px;
+  }
+  
+  .rank-badge {
+    width: 30px;
+    height: 30px;
+    font-size: 0.95em;
+  }
+  
+  .leaderboard-name {
+    font-size: 0.9em;
+  }
+  
+  .leaderboard-detail {
+    font-size: 0.7em;
+  }
+  
+  .leaderboard-score {
+    font-size: 1.1em;
+  }
+  
+  .start-overlay {
+    border-radius: 10px;
+  }
+  
+  .btn-start-game {
+    padding: 20px 35px;
+    border-radius: 16px;
+  }
+  
+  .start-icon {
+    font-size: 3em;
+  }
+  
+  .start-text {
+    font-size: 1.2em;
+  }
+  
+  .swipe-hint {
+    font-size: 0.8em;
+    padding: 6px 12px;
+  }
+}</style>
